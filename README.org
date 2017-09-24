@@ -1,0 +1,4 @@
+* E NetEase Music - Backend
+
+  Rewrite [[https://github.com/darknessomi/musicbox/][MusicBox]] in C++
+  E means Emacs
