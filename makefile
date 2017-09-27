@@ -3,6 +3,7 @@ CC_FLAG = "-g"
 
 
 default:
+	make clean
 	make main.out
 
 Player.o:

@@ -66,6 +66,7 @@ int MPG123::__parse_out__(void) {
     isPlaying = m_Status.PlayingFlag;
     __unlock__();
   }
+  printf("Exit...");
   return 0;
 }
 
@@ -74,16 +75,19 @@ int MPG123::__deal_with__(char cmd, char *buf) {
   case 'P':
     __lock__();
     switch (buf[2]) {
-    case 0:
+    case '0':
       m_Status.isSongLoaded = false;
+      m_Status.PlayingFlag = true;
       break;
-    case 1:
+    case '1':
       printf("Play Stop.\n");
       m_Status.PlayingFlag = false;
+      m_Status.isSongLoaded = true;
       break;
-    case 2:
+    case '2':
       printf("Play Start.\n");
       m_Status.PlayingFlag = true;
+      m_Status.isSongLoaded = true;
       break;
     }
     __unlock__();
@@ -185,8 +189,12 @@ int MPG123::Load(const char *url) {
   // Check
   while (__parse_cmd__() != 'P')
     ;
-  m_Status.isSongLoaded = true;
-  return 0;
+  int ret = 1;
+  __lock__();
+  if (m_Status.isSongLoaded)
+    ret = 0;
+  __unlock__();
+  return ret;
 }
 
 int MPG123::GetPlayerStatus(PlayerStatus *pStatus) {
