@@ -2,12 +2,10 @@
 
 namespace ENEM {
 
-const int PIPE_WRITE = 1;
-const int PIPE_READ = 0;
-
 typedef struct _PlayerStatus {
   const char *PlayerName;
   const char *ResourceUrl;
+  bool isSongLoaded;
   bool PlayingFlag;
   float Volume;
   float CurTime;
@@ -27,10 +25,12 @@ public:
 
   // Status
   virtual int GetPlayerStatus(PlayerStatus *pStatus) = 0;
+  virtual bool GetPlayerEnded(void) = 0;
 };
 
 class MPG123 : public IPlayerCore {
 public:
+  MPG123() : m_Status_lock(false) {}
   int SetPlayerStatus(bool Flag);
   int SetVolume(float Volume);
   int Init(void *);
@@ -38,10 +38,17 @@ public:
   int Load(const char *url);
 
   int GetPlayerStatus(PlayerStatus *pStatus);
+  bool GetPlayerEnded(void);
 
 private:
   int __create_proc__(void);
+  int __parse_out__(void);
+  int __parse_cmd__(void);
+  int __deal_with__(char cmd, char *buf);
+  int __lock__(void);
+  int __unlock__(void);
 
+  bool m_Status_lock;
   PlayerStatus m_Status;
   int PIPE_STDIN[2];
   int PIPE_STDOUT[2];
