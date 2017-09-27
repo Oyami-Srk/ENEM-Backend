@@ -9,9 +9,9 @@ typedef struct _PlayerStatus {
   bool PlayingFlag;
   float Volume;
   float CurTime;
-  float TotTime;
+  float RemTime;
   float CurFrame;
-  float TotFrame;
+  float RemFrame;
 } PlayerStatus;
 
 class IPlayerCore {

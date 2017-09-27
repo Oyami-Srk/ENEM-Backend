@@ -32,7 +32,7 @@ int MPG123::__create_proc__(void) {
   if (pid)
     return pid;
 
-  //dup2(PIPE_STDOUT[PIPE_WRITE], STDOUT_FILENO);
+  dup2(PIPE_STDOUT[PIPE_WRITE], STDOUT_FILENO);
   dup2(PIPE_STDIN[PIPE_READ], STDIN_FILENO);
   dup2(PIPE_STDERR[PIPE_WRITE], STDERR_FILENO);
   close(PIPE_STDOUT[PIPE_READ]);
@@ -59,8 +59,9 @@ int MPG123::__parse_out__(void) {
   __unlock__();
 
   while (isPlaying) {
-    //printf("?, ");
     // hadnle stdout
+    while (__parse_cmd__() != 'F')
+      ;
     __lock__();
     isPlaying = m_Status.PlayingFlag;
     __unlock__();
@@ -71,18 +72,36 @@ int MPG123::__parse_out__(void) {
 int MPG123::__deal_with__(char cmd, char *buf) {
   switch (cmd) {
   case 'P':
+    __lock__();
     switch (buf[2]) {
     case 0:
-      // NotLoaded
+      m_Status.isSongLoaded = false;
       break;
     case 1:
-      // Pause
+      printf("Play Stop.\n");
+      m_Status.PlayingFlag = false;
       break;
     case 2:
-      // Play
+      printf("Play Start.\n");
+      m_Status.PlayingFlag = true;
       break;
     }
+    __unlock__();
     break;
+
+  case 'F':
+    __lock__();
+    int cF = 0;
+    int rF = 0;
+    float cT = 0.0f;
+    float rT = 0.0f;
+    sscanf(buf, "F %d %d %f %f", &cF, &rF, &cT, &rT);
+    printf("cF %d, cT %f, rF %d, rT %f\n", cF, cT, rF, rT); // For debug
+    m_Status.CurTime = cT;
+    m_Status.CurFrame = cF;
+    m_Status.RemTime = rT;
+    m_Status.RemFrame = rF;
+    __unlock__();
   }
   return 0;
 }
@@ -92,12 +111,13 @@ int MPG123::__parse_cmd__(void) {
   char input_buffer[256];
   int rcount = 0;
   int icount = 0;
-  while (((rcount = read(PIPE_STDOUT[PIPE_READ], &c, 1)) <= 0) && (c != '@'))
+  while (((rcount = read(PIPE_STDOUT[PIPE_READ], &c, 1)) > 0) && (c != '@'))
     ;
-  while (((rcount = read(PIPE_STDOUT[PIPE_READ], &c, 1)) <= 0) && (c != '\n'))
+  while (((rcount = read(PIPE_STDOUT[PIPE_READ], &c, 1)) > 0) && (c != '\n'))
     input_buffer[icount++] = c;
   input_buffer[icount] = '\0';
   __deal_with__(input_buffer[0], input_buffer);
+  printf("%s\n", input_buffer);
   return input_buffer[0];
 }
 
@@ -163,7 +183,8 @@ int MPG123::Load(const char *url) {
   sprintf(buf, "LP %s\n", url);
   write(PIPE_STDIN[PIPE_WRITE], buf, strlen(buf));
   // Check
-  sleep(1);
+  while (__parse_cmd__() != 'P')
+    ;
   m_Status.isSongLoaded = true;
   return 0;
 }
@@ -179,7 +200,6 @@ bool MPG123::GetPlayerEnded(void) {
   bool ret = false;
   __lock__();
   ret = m_Status.PlayingFlag;
-  printf("%d, ", ret);
   __unlock__();
   return !ret;
 }
