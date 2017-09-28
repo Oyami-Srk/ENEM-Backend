@@ -22,9 +22,11 @@ int main(void) {
   player->SetPlayerStatus(true);
   player->SetVolume(10.0);
   PlayerStatus ps;
-  while (!player->GetPlayerEnded()) {
+  bool p = true;
+  while (p) {
     player->GetPlayerStatus(&ps);
     cout << " CurrtenFrame: " << ps.CurFrame << endl;
+    p = ps.PlayingFlag;
   }
   cout << "Player Exited" << endl;
   player->Release(NULL);

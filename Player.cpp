@@ -63,6 +63,10 @@ int MPG123::__deal_with__(char cmd, char *buf) {
     float cT = 0.0f;
     float rT = 0.0f;
     sscanf(buf, "F %d %d %f %f", &cF, &rF, &cT, &rT);
+    m_Status.CurFrame = cF;
+    m_Status.CurTime = cT;
+    m_Status.RemTime = rT;
+    m_Status.RemFrame = rF;
   }
   return 0;
 }
@@ -150,14 +154,8 @@ int MPG123::Load(const char *url) {
 }
 
 int MPG123::GetPlayerStatus(PlayerStatus *pStatus) {
-  while (__parse_cmd__() != 0)
-    ;
+  __parse_cmd__();
   if (pStatus)
     memcpy(pStatus, &m_Status, sizeof(PlayerStatus));
   return 0;
-}
-
-bool MPG123::GetPlayerEnded(void) {
-  GetPlayerStatus(NULL);
-  return !m_Status.PlayingFlag;
 }
