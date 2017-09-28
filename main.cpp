@@ -17,13 +17,14 @@ int main(void) {
   // std::string url =
   // "http://www.170mv.com/kw/other.web.nc01.sycdn.kuwo.cn/resource/n1/12/88/1459100477.mp3";
   std::string url = "http://www.w3school.com.cn/i/horse.mp3";
-  sleep(1);
   player->Load(url.c_str());
   cout << "Loaded!" << endl;
   player->SetPlayerStatus(true);
   player->SetVolume(10.0);
-  while (!player->GetPlayerEnded())
-    ;
+  PlayerStatus ps;
+  while (!player->GetPlayerEnded()) {
+    player->GetPlayerStatus(&ps);
+  }
   cout << "Player Exited" << endl;
   player->Release(NULL);
   return 0;

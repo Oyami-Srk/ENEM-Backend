@@ -60,13 +60,14 @@ int MPG123::__parse_out__(void) {
 
   while (isPlaying) {
     // hadnle stdout
-    while (__parse_cmd__() != 'F')
-      ;
+    __parse_cmd__();
     __lock__();
     isPlaying = m_Status.PlayingFlag;
     __unlock__();
+    printf("Eii: %d.   ", isPlaying);
   }
   printf("Exit...");
+  exit(0);
   return 0;
 }
 
@@ -76,8 +77,9 @@ int MPG123::__deal_with__(char cmd, char *buf) {
     __lock__();
     switch (buf[2]) {
     case '0':
+      printf("Play no source.\n");
       m_Status.isSongLoaded = false;
-      m_Status.PlayingFlag = true;
+      m_Status.PlayingFlag = false;
       break;
     case '1':
       printf("Play Stop.\n");
@@ -153,7 +155,11 @@ int MPG123::Release(__attribute__((unused)) void *ReleseArg) {
 }
 
 int MPG123::SetPlayerStatus(bool Flag) {
-  if (m_Status.PlayingFlag != Flag) {
+  __lock__();
+  bool PlayingFlag = m_Status.PlayingFlag;
+  __unlock__();
+
+  if (PlayingFlag != Flag) {
     write(PIPE_STDIN[PIPE_WRITE], "P\n", strlen("P\n"));
     __lock__();
     m_Status.PlayingFlag = Flag;

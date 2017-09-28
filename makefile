@@ -12,7 +12,8 @@ Player.o:
 main.out: Player.o
 	$(CC) $(CC_FLAG) -o main.out main.cpp Player.o
 
-run: main.out
+run: 
+	make default
 	./main.out
 
 clean:

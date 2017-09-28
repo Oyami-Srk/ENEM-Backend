@@ -10,8 +10,8 @@ typedef struct _PlayerStatus {
   float Volume;
   float CurTime;
   float RemTime;
-  float CurFrame;
-  float RemFrame;
+  int CurFrame;
+  int RemFrame;
 } PlayerStatus;
 
 class IPlayerCore {
@@ -30,7 +30,6 @@ public:
 
 class MPG123 : public IPlayerCore {
 public:
-  MPG123() : m_Status_lock(false) {}
   int SetPlayerStatus(bool Flag);
   int SetVolume(float Volume);
   int Init(void *);
@@ -53,5 +52,6 @@ private:
   int PIPE_STDIN[2];
   int PIPE_STDOUT[2];
   int PIPE_STDERR[2];
+  int mpg123_pid;
 };
 } // namespace ENEM
