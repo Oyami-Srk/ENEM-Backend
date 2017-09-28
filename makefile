@@ -1,5 +1,6 @@
 CC = g++
 CC_FLAG = "-g"
+CC_LIB="-lcurl"
 
 
 default:
@@ -9,10 +10,13 @@ default:
 Player.o:
 	$(CC) $(CC_FLAG) -c Player.cpp Player.h
 
-main.out: Player.o
-	$(CC) $(CC_FLAG) -o main.out main.cpp Player.o
+Netease.o:
+	$(CC) $(CC_FALG) -c Netease.cpp Netease.h $(CC_LIB)
 
-run: 
+main.out: Netease.o
+	$(CC) $(CC_FLAG) -o main.out main.cpp Netease.o $(CC_LIB)
+
+run:
 	make default
 	./main.out
 
