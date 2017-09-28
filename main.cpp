@@ -24,6 +24,7 @@ int main(void) {
   PlayerStatus ps;
   while (!player->GetPlayerEnded()) {
     player->GetPlayerStatus(&ps);
+    cout << " CurrtenFrame: " << ps.CurFrame << endl;
   }
   cout << "Player Exited" << endl;
   player->Release(NULL);

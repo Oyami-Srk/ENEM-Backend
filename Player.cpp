@@ -13,18 +13,6 @@
 using namespace ENEM;
 using std::string;
 
-int MPG123::__lock__(void) {
-  while (m_Status_lock)
-    ;
-  m_Status_lock = true;
-  return 0;
-}
-
-int MPG123::__unlock__(void) {
-  m_Status_lock = false;
-  return 0;
-}
-
 int MPG123::__create_proc__(void) {
   pid_t pid = fork();
   if (pid < 0)
@@ -47,34 +35,9 @@ int MPG123::__create_proc__(void) {
   exit(20);
 }
 
-int MPG123::__parse_out__(void) {
-  pid_t pid = fork();
-  if (pid < 0)
-    throw new std::runtime_error("Cannot fork process");
-  if (pid)
-    return pid;
-
-  __lock__();
-  bool isPlaying = m_Status.PlayingFlag;
-  __unlock__();
-
-  while (isPlaying) {
-    // hadnle stdout
-    __parse_cmd__();
-    __lock__();
-    isPlaying = m_Status.PlayingFlag;
-    __unlock__();
-    printf("Eii: %d.   ", isPlaying);
-  }
-  printf("Exit...");
-  exit(0);
-  return 0;
-}
-
 int MPG123::__deal_with__(char cmd, char *buf) {
   switch (cmd) {
   case 'P':
-    __lock__();
     switch (buf[2]) {
     case '0':
       printf("Play no source.\n");
@@ -92,22 +55,14 @@ int MPG123::__deal_with__(char cmd, char *buf) {
       m_Status.isSongLoaded = true;
       break;
     }
-    __unlock__();
     break;
 
   case 'F':
-    __lock__();
     int cF = 0;
     int rF = 0;
     float cT = 0.0f;
     float rT = 0.0f;
     sscanf(buf, "F %d %d %f %f", &cF, &rF, &cT, &rT);
-    printf("cF %d, cT %f, rF %d, rT %f\n", cF, cT, rF, rT); // For debug
-    m_Status.CurTime = cT;
-    m_Status.CurFrame = cF;
-    m_Status.RemTime = rT;
-    m_Status.RemFrame = rF;
-    __unlock__();
   }
   return 0;
 }
@@ -117,8 +72,16 @@ int MPG123::__parse_cmd__(void) {
   char input_buffer[256];
   int rcount = 0;
   int icount = 0;
-  while (((rcount = read(PIPE_STDOUT[PIPE_READ], &c, 1)) > 0) && (c != '@'))
-    ;
+  // while (((rcount = read(PIPE_STDOUT[PIPE_READ], &c, 1)) > 0) && (c != '@'))
+  // ;
+
+  rcount = read(PIPE_STDOUT[PIPE_READ], &c, 1);
+  if (rcount <= 0)
+    return 0;
+  else if (c != '@')
+    while (((rcount = read(PIPE_STDOUT[PIPE_READ], &c, 1)) > 0) && (c != '@'))
+      ;
+
   while (((rcount = read(PIPE_STDOUT[PIPE_READ], &c, 1)) > 0) && (c != '\n'))
     input_buffer[icount++] = c;
   input_buffer[icount] = '\0';
@@ -135,18 +98,14 @@ int MPG123::Init(__attribute__((unused)) void *InitArg) {
 
   __create_proc__();
 
-  __lock__();
   m_Status.PlayerName = "mpg123";
   m_Status.PlayingFlag = false;
   m_Status.Volume = 100;
-  __unlock__();
   return 0;
 }
 
 int MPG123::Release(__attribute__((unused)) void *ReleseArg) {
-  __lock__();
   m_Status.PlayingFlag = false;
-  __unlock__();
   write(PIPE_STDIN[PIPE_WRITE], "Q\n", strlen("Q\n"));
   close(PIPE_STDOUT[PIPE_WRITE]);
   close(PIPE_STDIN[PIPE_READ]);
@@ -155,26 +114,18 @@ int MPG123::Release(__attribute__((unused)) void *ReleseArg) {
 }
 
 int MPG123::SetPlayerStatus(bool Flag) {
-  __lock__();
   bool PlayingFlag = m_Status.PlayingFlag;
-  __unlock__();
 
   if (PlayingFlag != Flag) {
     write(PIPE_STDIN[PIPE_WRITE], "P\n", strlen("P\n"));
-    __lock__();
     m_Status.PlayingFlag = Flag;
-    __unlock__();
-    if (Flag)
-      __parse_out__();
   }
   return 0;
 }
 
 int MPG123::SetVolume(float Volume) {
   if (Volume >= 0.0) {
-    __lock__();
     m_Status.Volume = Volume;
-    __unlock__();
     char buf[32];
     memset(buf, 0, sizeof(buf));
     sprintf(buf, "V %f\n", Volume);
@@ -186,34 +137,27 @@ int MPG123::SetVolume(float Volume) {
 int MPG123::Load(const char *url) {
   if (!url)
     return 1;
-  __lock__();
   m_Status.ResourceUrl = url;
-  __unlock__();
   char buf[1024];
   sprintf(buf, "LP %s\n", url);
   write(PIPE_STDIN[PIPE_WRITE], buf, strlen(buf));
-  // Check
   while (__parse_cmd__() != 'P')
     ;
   int ret = 1;
-  __lock__();
   if (m_Status.isSongLoaded)
     ret = 0;
-  __unlock__();
   return ret;
 }
 
 int MPG123::GetPlayerStatus(PlayerStatus *pStatus) {
-  __lock__();
-  memcpy(pStatus, &m_Status, sizeof(PlayerStatus));
-  __unlock__();
+  while (__parse_cmd__() != 0)
+    ;
+  if (pStatus)
+    memcpy(pStatus, &m_Status, sizeof(PlayerStatus));
   return 0;
 }
 
 bool MPG123::GetPlayerEnded(void) {
-  bool ret = false;
-  __lock__();
-  ret = m_Status.PlayingFlag;
-  __unlock__();
-  return !ret;
+  GetPlayerStatus(NULL);
+  return !m_Status.PlayingFlag;
 }

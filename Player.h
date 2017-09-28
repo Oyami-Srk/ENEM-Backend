@@ -44,10 +44,7 @@ private:
   int __parse_out__(void);
   int __parse_cmd__(void);
   int __deal_with__(char cmd, char *buf);
-  int __lock__(void);
-  int __unlock__(void);
 
-  bool m_Status_lock;
   PlayerStatus m_Status;
   int PIPE_STDIN[2];
   int PIPE_STDOUT[2];
